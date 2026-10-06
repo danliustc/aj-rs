@@ -30,6 +30,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+      - name: Check tag matches Cargo.toml
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          crate=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
+          [ "v$crate" = "$GITHUB_REF_NAME" ] || { echo "tag $GITHUB_REF_NAME != Cargo.toml v$crate"; exit 1; }
       - run: cargo build --release --locked --target ${{ matrix.target }}
       - name: Package
         id: package
@@ -52,3 +57,35 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: ${{ steps.package.outputs.archive }}
+
+  # Render the Homebrew formula from the archives above and attach it to the
+  # release. If the HOMEBREW_TAP_TOKEN secret is set (a token with write
+  # access to danliustc/homebrew-tap), also commit it to the tap.
+  homebrew:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - run: tools/homebrew-formula.sh "$GITHUB_REF_NAME" dist > aj-rs.rb
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: aj-rs.rb
+      - name: Update tap
+        env:
+          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        if: env.TAP_TOKEN != ''
+        run: |
+          git clone "https://x-access-token:${TAP_TOKEN}@github.com/danliustc/homebrew-tap.git" tap
+          mkdir -p tap/Formula
+          cp aj-rs.rb tap/Formula/aj-rs.rb
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/aj-rs.rb
+          git diff --cached --quiet || git commit -m "aj-rs $GITHUB_REF_NAME"
+          git push

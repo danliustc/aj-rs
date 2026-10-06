@@ -6,9 +6,11 @@ rust-version = "1.89"
 description = "A fast Rust port of autojump: a cd command that learns"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/danliustc/aj-rs"
+homepage = "https://github.com/danliustc/aj-rs"
 readme = "README.md"
 keywords = ["autojump", "cd", "shell", "cli", "navigation"]
 categories = ["command-line-utilities"]
+include = ["src/", "shell/", "tests/", "Cargo.lock", "README.md", "LICENSE"]
 
 [[bin]]
 name = "autojump"

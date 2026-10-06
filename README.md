@@ -23,7 +23,28 @@ Rust 版是单个静态二进制，启动即退出：
 
 支持 **macOS**（Apple Silicon / Intel）和 **Linux**（Ubuntu 等，x86_64 / aarch64）。
 
-**方式一：下载预编译二进制**（推荐，不需要 Rust）。从
+**方式一：Homebrew**（macOS / Linux，推荐）：
+
+```sh
+brew install danliustc/tap/aj-rs
+```
+
+装的是预编译二进制，不需要 Rust。命令名仍是 `autojump`，所以和 Homebrew 官方的 `autojump` 互斥，
+先 `brew uninstall autojump`。想跟 main 分支走：`brew install --HEAD danliustc/tap/aj-rs`（需要 Rust）。
+
+**方式二：Cargo**，需要 Rust ≥ 1.89：
+
+```sh
+cargo install aj-rs                                       # crates.io 上的发布版
+cargo install --git https://github.com/danliustc/aj-rs    # main 分支最新代码
+```
+
+crate 叫 `aj-rs`，装出来的命令叫 `autojump`。
+
+> Ubuntu 用户注意：`apt install cargo` 装的 Rust 太旧（24.04 是 1.75），会编译失败。
+> 请用 [rustup](https://rustup.rs) 安装 Rust，或用其他方式。
+
+**方式三：下载预编译二进制**。从
 [Releases](https://github.com/danliustc/aj-rs/releases) 下载对应平台的包，把 `autojump` 放进 `PATH`：
 
 | 平台 | 文件 |
@@ -36,16 +57,7 @@ Rust 版是单个静态二进制，启动即退出：
 Linux 包是静态链接（musl），不挑 glibc 版本，任何 Ubuntu 都能直接跑。
 macOS 下首次运行如果被 Gatekeeper 拦截：`xattr -d com.apple.quarantine ./autojump`。
 
-**方式二：从源码编译**，需要 Rust ≥ 1.89：
-
-```sh
-cargo install --git https://github.com/danliustc/aj-rs
-```
-
-> Ubuntu 用户注意：`apt install cargo` 装的 Rust 太旧（24.04 是 1.75），会编译失败。
-> 请用 [rustup](https://rustup.rs) 安装 Rust，或直接用方式一。
-
-然后在 shell 配置里加一行：
+不管哪种方式，装完都要在 shell 配置里加一行，`j` / `jc` / `jo` 才会出现：
 
 | Shell | 配置 |
 | --- | --- |
@@ -115,6 +127,15 @@ Tab 补全会给出 `proj__1__/path/to/proj` 形式的菜单，选中后 `j` 直
 | Windows | `%APPDATA%\autojump\autojump.txt` |
 
 旁边的 `autojump.txt.bak` 每 24 小时备份一次；主文件丢失时会自动从备份读。
+
+## 发布新版本（维护者）
+
+1. 改 `Cargo.toml` 里的 `version`，提交。
+2. 打 tag 并推送：`git tag v0.2.0 && git push origin v0.2.0`。tag 必须和 `version` 一致，否则 Release 工作流直接失败。
+3. Release 工作流会构建四个平台的二进制、挂到 GitHub Release，并生成 Homebrew formula `aj-rs.rb` 一起挂上。
+   配置了 `HOMEBREW_TAP_TOKEN` secret（对 `danliustc/homebrew-tap` 有写权限的 token）时，会自动提交到 tap；
+   没配就手动把 `aj-rs.rb` 放进 tap 仓库的 `Formula/` 目录。
+4. 发布到 crates.io：`cargo publish`（先 `cargo login`）。
 
 ## 许可
 

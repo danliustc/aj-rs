@@ -1,0 +1,26 @@
+[package]
+name = "aj-rs"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.89"
+description = "A fast Rust port of autojump: a cd command that learns"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/danliustc/aj-rs"
+readme = "README.md"
+keywords = ["autojump", "cd", "shell", "cli", "navigation"]
+categories = ["command-line-utilities"]
+
+[[bin]]
+name = "autojump"
+path = "src/main.rs"
+
+[dependencies]
+regex = "1"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true

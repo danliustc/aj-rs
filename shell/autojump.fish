@@ -1,0 +1,102 @@
+# autojump (Rust port) integration for fish.
+# Load it from ~/.config/fish/config.fish with:  autojump --init fish | source
+
+set -gx AUTOJUMP_SOURCED 1
+
+# Record the directory each time it changes.
+function __autojump_add --on-variable PWD
+    status --is-command-substitution; and return
+    command autojump --add "$PWD" >/dev/null 2>&1 &
+    disown 2>/dev/null
+end
+
+# Print the resolved directory for $argv, or fail.
+function __autojump_resolve
+    set -l output (command autojump $argv)
+    if test "$output" != "." -a -d "$output"
+        echo $output
+        return 0
+    end
+    return 1
+end
+
+# Kept out of __autojump_resolve: stderr inside a command substitution would
+# ignore the caller's redirections.
+function __autojump_not_found
+    echo "autojump: directory '$argv' not found" >&2
+    echo "Try `autojump --help` for more information." >&2
+    return 1
+end
+
+function j
+    switch "$argv[1]"
+        case '--'
+        case '-*'
+            command autojump $argv
+            return
+    end
+    set -l output (__autojump_resolve $argv)
+    or begin
+        __autojump_not_found $argv
+        return 1
+    end
+    if isatty stdout
+        set_color red
+        echo $output
+        set_color normal
+    else
+        echo $output
+    end
+    cd $output
+end
+
+function jc
+    switch "$argv[1]"
+        case '--'
+        case '-*'
+            command autojump $argv
+            return
+    end
+    j $PWD $argv
+end
+
+function jo
+    switch "$argv[1]"
+        case '--'
+        case '-*'
+            command autojump $argv
+            return
+    end
+    set -l output (__autojump_resolve $argv)
+    or begin
+        __autojump_not_found $argv
+        return 1
+    end
+    switch (uname)
+        case Darwin
+            open $output
+        case 'CYGWIN*' 'MSYS*'
+            cygstart "" (cygpath -w -a $output)
+        case '*'
+            xdg-open $output
+    end
+end
+
+function jco
+    switch "$argv[1]"
+        case '--'
+        case '-*'
+            command autojump $argv
+            return
+    end
+    jo $PWD $argv
+end
+
+# fish 4 bundles completions/j.fish, which autoloads the first time `j` is
+# completed and erases any existing `j` completions (replacing them with
+# history-based ones). Trigger that autoload now, then register ours on top.
+complete -C 'j ' >/dev/null 2>&1
+for cmd in j jc jo jco
+    complete -c $cmd -e
+    complete -c $cmd -x -a '(command autojump --complete (commandline -t))'
+end

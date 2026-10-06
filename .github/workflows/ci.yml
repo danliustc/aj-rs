@@ -2,12 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [main]
   pull_request:
 
 jobs:
   test:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
@@ -19,5 +19,20 @@ jobs:
       - run: cargo fmt --check
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
-      - name: Shell scripts parse
-        run: bash -n shell/autojump.bash
+      - name: Install zsh and fish
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            sudo apt-get update -q && sudo apt-get install -y -q zsh fish
+          else
+            brew install fish
+          fi
+      # On macOS this exercises the system /bin/bash 3.2 and zsh.
+      - name: Shell integration smoke test
+        run: cargo build && tools/shell-smoke.sh target/debug
+
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.89
+      - run: cargo build --locked

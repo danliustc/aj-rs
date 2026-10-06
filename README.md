@@ -21,17 +21,39 @@ Rust 版是单个静态二进制，启动即退出：
 
 ## 安装
 
+支持 **macOS**（Apple Silicon / Intel）和 **Linux**（Ubuntu 等，x86_64 / aarch64）。
+
+**方式一：下载预编译二进制**（推荐，不需要 Rust）。从
+[Releases](https://github.com/danliustc/aj-rs/releases) 下载对应平台的包，把 `autojump` 放进 `PATH`：
+
+| 平台 | 文件 |
+| --- | --- |
+| macOS Apple Silicon | `autojump-<版本>-aarch64-apple-darwin.tar.gz` |
+| macOS Intel | `autojump-<版本>-x86_64-apple-darwin.tar.gz` |
+| Linux x86_64 | `autojump-<版本>-x86_64-unknown-linux-musl.tar.gz` |
+| Linux aarch64 | `autojump-<版本>-aarch64-unknown-linux-musl.tar.gz` |
+
+Linux 包是静态链接（musl），不挑 glibc 版本，任何 Ubuntu 都能直接跑。
+macOS 下首次运行如果被 Gatekeeper 拦截：`xattr -d com.apple.quarantine ./autojump`。
+
+**方式二：从源码编译**，需要 Rust ≥ 1.89：
+
 ```sh
 cargo install --git https://github.com/danliustc/aj-rs
 ```
+
+> Ubuntu 用户注意：`apt install cargo` 装的 Rust 太旧（24.04 是 1.75），会编译失败。
+> 请用 [rustup](https://rustup.rs) 安装 Rust，或直接用方式一。
 
 然后在 shell 配置里加一行：
 
 | Shell | 配置 |
 | --- | --- |
 | bash (`~/.bashrc`) | `eval "$(autojump --init bash)"` |
-| zsh (`~/.zshrc`，放在 `compinit` 之后) | `eval "$(autojump --init zsh)"` |
+| zsh (`~/.zshrc`，放在 `compinit` 之后；macOS 默认 shell) | `eval "$(autojump --init zsh)"` |
 | fish (`~/.config/fish/config.fish`) | `autojump --init fish \| source` |
+
+macOS 自带的 `/bin/bash` 是 3.2，也支持。
 
 **从原版迁移：零成本。** 数据文件路径和格式（`权重\t路径`）与原版完全一致，
 装好后原来积累的 `autojump.txt` 直接可用。记得把原版的 `source .../autojump.sh` 删掉。

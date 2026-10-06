@@ -14,13 +14,19 @@ for cmd in j jc jo jco
     complete -c $cmd -x -a '(command autojump --complete (commandline -t))'
 end
 
-# Print the resolved directory for $argv, or complain and fail.
+# Print the resolved directory for $argv, or fail.
 function __autojump_resolve
     set -l output (command autojump $argv)
     if test "$output" != "." -a -d "$output"
         echo $output
         return 0
     end
+    return 1
+end
+
+# Kept out of __autojump_resolve: stderr inside a command substitution would
+# ignore the caller's redirections.
+function __autojump_not_found
     echo "autojump: directory '$argv' not found" >&2
     echo "Try `autojump --help` for more information." >&2
     return 1
@@ -33,7 +39,11 @@ function j
             command autojump $argv
             return
     end
-    set -l output (__autojump_resolve $argv); or return 1
+    set -l output (__autojump_resolve $argv)
+    or begin
+        __autojump_not_found $argv
+        return 1
+    end
     if isatty stdout
         set_color red
         echo $output
@@ -61,7 +71,11 @@ function jo
             command autojump $argv
             return
     end
-    set -l output (__autojump_resolve $argv); or return 1
+    set -l output (__autojump_resolve $argv)
+    or begin
+        __autojump_not_found $argv
+        return 1
+    end
     switch (uname)
         case Darwin
             open $output

@@ -10,10 +10,6 @@ function __autojump_add --on-variable PWD
     disown 2>/dev/null
 end
 
-for cmd in j jc jo jco
-    complete -c $cmd -x -a '(command autojump --complete (commandline -t))'
-end
-
 # Print the resolved directory for $argv, or fail.
 function __autojump_resolve
     set -l output (command autojump $argv)
@@ -94,4 +90,13 @@ function jco
             return
     end
     jo $PWD $argv
+end
+
+# fish 4 bundles completions/j.fish, which autoloads the first time `j` is
+# completed and erases any existing `j` completions (replacing them with
+# history-based ones). Trigger that autoload now, then register ours on top.
+complete -C 'j ' >/dev/null 2>&1
+for cmd in j jc jo jco
+    complete -c $cmd -e
+    complete -c $cmd -x -a '(command autojump --complete (commandline -t))'
 end
